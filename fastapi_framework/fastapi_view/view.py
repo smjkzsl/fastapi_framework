@@ -6,11 +6,12 @@ import inspect
 
 
 class _View(object):
-    def __init__(self,request,response=None):
+    def __init__(self,request,response=None,version=""):
         self._views_directory = f"{os.path.abspath('')}/app/views"
         self._templates = Jinja2Templates(directory=self.views_directory)
         self.request = request
         self.response = response
+        self.version = version
     @property
     def templates(self):
         return self._templates
@@ -42,7 +43,11 @@ class _View(object):
             del caller_locals['self']
             context = caller_locals
         if view_path=="":
-            view_path = f"{caller_classname}/{caller_function_name}.html" 
+            if self.version:
+                version_path = f"{self.version}/"
+            else:
+                version_path = ""
+            view_path = f"{caller_classname}/{version_path}{caller_function_name}.html" 
         
 
         if not view_path.endswith(".html"):

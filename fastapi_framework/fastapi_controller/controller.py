@@ -67,25 +67,7 @@ def create_controller(template_path_prefix: str = "", version: str = "" ) -> Typ
 
 class controller:
     """ """
-    # def __init__(self, func, *args, **kwargs):
-    #     self.func = func
-    #     self.args = args
-    #     self.kwargs = kwargs
-
-    # def __call__(self, func):
-    #     async def wrapped_func(instance, *args, **kwargs):
-    #         name = '%s_called' % func.__name__ 
-    #         setattr(instance, name, True)
-    #         if inspect.iscoroutinefunction(self.func):
-    #           return await func(instance, *args, **kwargs)
-    #         else:
-    #           return func(instance, *args, **kwargs)
-    #     return wrapped_func
-
-    # def __get__(self, instance, owner):
-    #     self.instance_ = instance
-    #     return self.__call__
-
+    
     
     @staticmethod
     def get(path: str, *args, **kwargs):
