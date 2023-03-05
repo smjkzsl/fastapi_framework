@@ -28,14 +28,12 @@ def api_router(path:str="", version:str=""):
         else:
             _controllerBase = create_controller("/{controller}/v{version}",version )  
     else:
-        _controllerBase = create_controller( ) 
-    
-     
+        _controllerBase = create_controller()  
+        
     __all_controller__.append(_controllerBase)
     
     def _wapper(targetController):  
-        # 定义一个傀儡类，继承自目标类 
-         
+        # 定义一个傀儡类，继承自目标类  
         class puppetController( targetController ,_controllerBase ): 
              
             def __init__(self,**kwags) -> None:
@@ -44,7 +42,8 @@ def api_router(path:str="", version:str=""):
              
             @property
             def view(self): 
-                return _View(self.request,self.response)
+                
+                return _View(self.request,self.response,self.__version__)
             
             async def getUploadFile(self,file:File):
                 
@@ -72,12 +71,10 @@ def api_router(path:str="", version:str=""):
                 pass
                  
         setattr(puppetController,"__name__",targetController.__name__)  
+        setattr(puppetController,"__version__",version)  
 
         return puppetController 
-    return _wapper #: @puppetController
-
- 
-
+    return _wapper #: @puppetController 
 
 @__app.middleware("http")
 async def preprocess_request(request: Request, call_next):
@@ -90,21 +87,18 @@ async def preprocess_request(request: Request, call_next):
     if is_static_file(request.url.path): 
         curpath = os.path.realpath(os.curdir+"/app/views")
         abspath = os.path.realpath(curpath+request.url.path )
-        response = FileResponse(path= (abspath),filename=os.path.basename(abspath))
+        response = FileResponse(path=abspath,filename=os.path.basename(abspath))
         return response 
    
-    if __is_debug:start_time = time.time() 
+    if __is_debug:
+        start_time = time.time() 
+    #pre call to controller method
     response:Response = await call_next(request)
+
     if __is_debug:
         process_time = time.time() - start_time
-        response.headers["X-Process-Time"] = str(process_time) 
-    
-     
-    # response.request = request
-    return response
-
- 
-
+        response.headers["X-Process-Time"] = str(process_time)  
+    return response 
 
 __is_debug=False
 def run(*args,**kwargs): 
