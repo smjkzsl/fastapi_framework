@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <div class="circle">
+        <p class="text rotate">FastApi Framework</p>
+    </div>
+    <div>
+        {{request.url.path}}
+    </div>
+    <style>
+        .circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background-color: lightblue;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .text {
+            font-size: 20px;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        
+        .rotate {
+            animation: spin 10s linear infinite;
+        }
+        
+        .letter {
+            position: absolute;
+            transform-origin: center 100px;
+        }
+        
+        .letter:nth-child(1) {
+            transform: rotate(0deg);
+        }
+        
+        .letter:nth-child(2) {
+            transform: rotate(30deg);
+        }
+        
+        .letter:nth-child(3) {
+            transform: rotate(60deg);
+        }
+        /* ... */
+        
+        .letter:nth-child(12) {
+            transform: rotate(330deg);
+        }
+        
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+
+</html>
