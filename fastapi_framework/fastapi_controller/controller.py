@@ -32,8 +32,9 @@ def register_controllers_to_app(app: FastAPI,
     for ctrl in controllers:
         _register_controller_to_router(router, ctrl)
 
+    
     app.include_router(router)
-
+    return router
 
 def create_controller(template_path_prefix: str = "", version: str = "" ) -> Type[ControllerBase]:
     """

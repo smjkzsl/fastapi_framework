@@ -6,8 +6,8 @@ import inspect
 
 
 class _View(object):
-    def __init__(self,request,response=None,version=""):
-        self._views_directory = f"{os.path.abspath('')}/app/views"
+    def __init__(self,request,response=None,version="",tmpl_path:str=f"{os.path.abspath('')}/app/views"):
+        self._views_directory = tmpl_path
         self._templates = Jinja2Templates(directory=self.views_directory)
         self.request = request
         self.response = response

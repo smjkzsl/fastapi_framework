@@ -8,20 +8,35 @@ from fastapi_controller.controller_utils import  TEMPLATE_PATH_KEY, VER_KEY
 import time,os,inspect
 from fastapi import FastAPI, Cookie,Request
  
-from .fastapi_controller import SessionManager
+from .fastapi_controller import SessionManager,_SESSION_STORAGES
 import datetime  
 from starlette.responses import FileResponse
 from fastapi_framework.fastapi_view import _View
 from hashlib import md5
+from fastapi_framework.config import YamlConfig
+
+ROOT_PATH = os.path.realpath(os.curdir)
+
 
 __app = FastAPI() 
  
 __all_controller__ = []
+config = YamlConfig(os.path.join(ROOT_PATH,"configs") )
+__session_config = config.get('session')
 
-_sessionManager = SessionManager(storage=FileStorage("sessions",key="123456"))
+_sessionManager = SessionManager(storage=_SESSION_STORAGES[__session_config['type']](__session_config['dir'],__session_config['secretkey']))
  
 
 def api_router(path:str="", version:str=""):  
+    caller_frame = inspect.currentframe().f_back
+    caller_file = caller_frame.f_code.co_filename
+    relative_path = caller_file.replace(ROOT_PATH,"")
+    if relative_path.count(os.sep)>2:
+        app_dir = os.path.dirname(os.path.dirname(relative_path)).replace(os.sep,"")
+    else:
+        app_dir = "app"
+    app_dir = os.path.join(ROOT_PATH,app_dir)
+
     if  version:
         if path:
             _controllerBase = create_controller(path,version )
@@ -42,13 +57,15 @@ def api_router(path:str="", version:str=""):
              
             @property
             def view(self): 
-                
-                return _View(self.request,self.response,self.__version__)
+                template_path = os.path.join(self.__appdir__,"views")
+                return _View(self.request,self.response,self.__version__,tmpl_path=template_path)
             
-            async def getUploadFile(self,file:File):
-                
-                _save_dir = os.path.realpath(os.path.dirname(__file__))
-                _save_dir = os.path.join(_save_dir, "uploads") 
+            async def getUploadFile(self,file:File):  
+                if config.get("upload"):
+                    updir = config.get("upload")['dir'] or "uploads"
+                else:
+                    updir = 'uploads'
+                _save_dir = os.path.join(ROOT_PATH,updir) 
                 if not os.path.exists(_save_dir):
                     os.mkdir(_save_dir) 
                 data = await file.read()
@@ -67,12 +84,14 @@ def api_router(path:str="", version:str=""):
                 # self.response = response
                 self.session = await  _sessionManager.initSession(request,response )
             async def _deconstructor(self,new_response:Response):
-                await _sessionManager.process(self.session,new_response)
+                await _sessionManager.process(session =  self.session,response = new_response,request=self.request)
                 pass
                  
         setattr(puppetController,"__name__",targetController.__name__)  
         setattr(puppetController,"__version__",version)  
-
+        setattr(puppetController,"__location__",relative_path)  
+        setattr(puppetController,"__appdir__",app_dir)  
+         
         return puppetController 
     return _wapper #: @puppetController 
 
@@ -108,9 +127,15 @@ def run(*args,**kwargs):
      
     if not len(__all_controller__)>0:
         raise "must use @api_route to define a controller class"
-     
+    all_routers = []
     for ctrl in __all_controller__:
-        register_controllers_to_app(__app, ctrl) 
+        all_routers.append(register_controllers_to_app(__app, ctrl))
+    if isDebug:
+        print("all router:\n")
+        for router in all_routers:
+            for r in router.routes:
+                funcname = str(r.endpoint).split('<function ')[1].split(" at ")[0]
+                print(f"***** http:{ip}:{port}{r.path} ***({funcname})***" )
     global __is_debug
     __is_debug = isDebug
     uvicorn.run(__app, host=ip, port=port,debug=isDebug)

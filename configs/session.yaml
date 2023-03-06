@@ -1,0 +1,5 @@
+session:
+  type: "file"
+  secretkey: "123456ABC%$@@#5"
+  dir: "./sessions"
+ 

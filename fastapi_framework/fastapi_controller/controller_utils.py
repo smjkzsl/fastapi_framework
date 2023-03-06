@@ -245,7 +245,7 @@ def _register_controller_to_router(router: APIRouter, controller: Type[Controlle
         # 添加到 fastapi apiroute
         new_route_method = route_method(path, **kwargs)(new_member)
         setattr(controller, name, new_route_method)
-
+    
     cbv(router)(controller)
 
 from fastapi import Request

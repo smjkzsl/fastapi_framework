@@ -47,6 +47,8 @@ class MemoryStorage(SessionStorage):
 import os
 class FileStorage(SessionStorage):
     filename:str = ""
+    cachedData:Dict[str,Dict] = {}
+
     def __init__(self, dir: str, key: str=""):
         
         super().__init__(key)
@@ -65,10 +67,13 @@ class FileStorage(SessionStorage):
      
     def get(self, session_id: str) -> Dict:
         filename = self.ensure_file_exists(session_id)
+        if session_id in self.cachedData:
+            return self.cachedData[session_id]
         try:
             with open(filename, "rb") as f:
                 encrypted_data = f.read()
             data = self._decrypt(encrypted_data)
+            self.cachedData[session_id] = data
         except FileNotFoundError:
             data = {}
         except Exception as e:
@@ -78,6 +83,8 @@ class FileStorage(SessionStorage):
 
     def set(self, session_id: str, data: Dict) -> None:
         filename = self.ensure_file_exists(session_id)
+        self.cachedData[session_id] = data
+
         encrypted_data = self._encrypt(data)
         with open(filename, "wb") as f:
             f.write(encrypted_data)
@@ -108,6 +115,9 @@ try:
         def delete(self, session_id: str) -> None:
             self.redis_client.delete(session_id)
 except(ImportError):
+    class RedisStorage(SessionStorage):
+        def __init__(self, k: str = "") -> None:
+            raise ImportError("redis seen is not installed,please use `pip install redis` to install it.")
     pass
 
 from datetime import datetime
@@ -169,22 +179,26 @@ class SessionManager( ):
         session = Session( sid,self.storage) 
         return session
         # response = await call_next(request) 
-        connect_stop = await request.is_disconnected() 
-        if connect_stop:
-            session.clear()
-    async def process(self,session:Session,response:Response): 
+        
+    async def process(self,session:Session,response:Response,request:Request=None): 
         response.set_cookie(
                     key="session_id",
                     value=session.sid,
+                    #如果maxAge为0，则表示删除该Cookie。Cookie机制没有提供删除Cookie的方法，因此通过设置该Cookie即时失效实现删除Cookie的效果。失效的Cookie会被浏览器从Cookie文件或者内存中删除 。
+                    #可以为负数，表示此cookie只是存储在浏览器内存里，只要关闭浏览器，此cookie就会消失。maxAge默认值为-1。
+                    #maxAge 可以为正数，表示此cookie从创建到过期所能存在的时间，以秒为单位，此cookie会存储到客户端电脑，以cookie文件形式保存，不论关闭浏览器或关闭电脑，直到时间到才会过期
                     max_age=1800,
                     httponly=True,
                     secure=True,
-                    samesite="Lax",
+                    samesite="Lax",#Cookie 不会通过正常的跨站点子请求（例如将图像或帧加载到第三方站点）发送，而是在用户导航到源站点时（即点击链接时）发送。
                 )
-        
+        if request:
+            connect_stop = await request.is_disconnected() 
+            if connect_stop:
+                session.clear()
         
 
- 
+_SESSION_STORAGES = {"file":FileStorage,"memory":MemoryStorage,'redis':RedisStorage}
 
 
 
