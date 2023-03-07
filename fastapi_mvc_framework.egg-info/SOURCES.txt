@@ -1,0 +1,9 @@
+README.md
+setup.py
+fastapi_mvc_framework/__init__.py
+fastapi_mvc_framework/config.py
+fastapi_mvc_framework/core.py
+fastapi_mvc_framework.egg-info/PKG-INFO
+fastapi_mvc_framework.egg-info/SOURCES.txt
+fastapi_mvc_framework.egg-info/dependency_links.txt
+fastapi_mvc_framework.egg-info/top_level.txt
