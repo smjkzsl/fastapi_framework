@@ -2,7 +2,7 @@ from typing import Any,Dict
 import uvicorn
 from fastapi import FastAPI,UploadFile,File,Header, Depends,HTTPException,Request,Response
 from fastapi.security import OAuth2PasswordBearer
-from fastapi_framework import create_controller,controller as api,   register_controllers_to_app,Session, FileStorage,MemoryStorage
+from fastapi_mvc_framework import create_controller,controller as api,   register_controllers_to_app,Session, FileStorage,MemoryStorage
 from pydantic import BaseModel 
 from fastapi_controller.controller_utils import  TEMPLATE_PATH_KEY, VER_KEY
 import time,os,inspect
@@ -11,15 +11,17 @@ from fastapi import FastAPI, Cookie,Request
 from .fastapi_controller import SessionManager,_SESSION_STORAGES
 import datetime  
 from starlette.responses import FileResponse
-from fastapi_framework.fastapi_view import _View
+from fastapi_mvc_framework.fastapi_view import _View
 from hashlib import md5
-from fastapi_framework.config import YamlConfig
+from fastapi_mvc_framework.config import YamlConfig
+from fastapi.staticfiles import StaticFiles
 
 ROOT_PATH = os.path.realpath(os.curdir)
 
 
 __app = FastAPI() 
- 
+__app_views_dirs = {}
+
 __all_controller__ = []
 config = YamlConfig(os.path.join(ROOT_PATH,"configs") )
 __session_config = config.get('session')
@@ -91,23 +93,31 @@ def api_router(path:str="", version:str=""):
         setattr(puppetController,"__version__",version)  
         setattr(puppetController,"__location__",relative_path)  
         setattr(puppetController,"__appdir__",app_dir)  
-         
+        if not app_dir in __app_views_dirs:
+            __app_views_dirs[app_dir] = os.path.join(app_dir,"views")
+            __app.mount("/"+os.path.basename(app_dir), 
+                        StaticFiles(directory=__app_views_dirs[app_dir]), name=os.path.basename(app_dir))
+ 
         return puppetController 
     return _wapper #: @puppetController 
+
+
+
+
 
 @__app.middleware("http")
 async def preprocess_request(request: Request, call_next):
     print(f"dispatch on preprocess_request")
-    def is_static_file(filename: str) -> bool:
-        if filename.find(".")<0:return False
-        static_extensions = ['.css', '.js', '.png', '.jpg']
-        file_extension = os.path.splitext(filename)[1].lower()
-        return file_extension in static_extensions
-    if is_static_file(request.url.path): 
-        curpath = os.path.realpath(os.curdir+"/app/views")
-        abspath = os.path.realpath(curpath+request.url.path )
-        response = FileResponse(path=abspath,filename=os.path.basename(abspath))
-        return response 
+    # def is_static_file(filename: str) -> bool:
+    #     if filename.find(".")<0:return False
+    #     static_extensions = ['.css', '.js', '.png', '.jpg']
+    #     file_extension = os.path.splitext(filename)[1].lower()
+    #     return file_extension in static_extensions
+    # if is_static_file(request.url.path): 
+    #     curpath = os.path.realpath(os.curdir+"/app/views")
+    #     abspath = os.path.realpath(curpath+request.url.path )
+    #     response = FileResponse(path=abspath,filename=os.path.basename(abspath))
+    #     return response 
    
     if __is_debug:
         start_time = time.time() 
