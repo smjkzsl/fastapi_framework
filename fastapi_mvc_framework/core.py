@@ -30,6 +30,9 @@ _sessionManager = SessionManager(storage=_SESSION_STORAGES[__session_config['typ
  
 
 def api_router(path:str="", version:str=""):  
+    '''
+    path :special path format ,
+    '''
     caller_frame = inspect.currentframe().f_back
     caller_file = caller_frame.f_code.co_filename
     relative_path = caller_file.replace(ROOT_PATH,"")
@@ -43,7 +46,7 @@ def api_router(path:str="", version:str=""):
         if path:
             _controllerBase = create_controller(path,version )
         else:
-            _controllerBase = create_controller("/{controller}/v{version}",version )  
+            _controllerBase = create_controller("/{controller}/{version}",version )  
     else:
         _controllerBase = create_controller()  
         
@@ -59,9 +62,30 @@ def api_router(path:str="", version:str=""):
              
             @property
             def view(self): 
-                def url_for(url:str):
-                    path = self.__view_url__  
-                    return path + "/" + url.strip()
+                def url_for(url:str="",type:str="static",**kws):
+                    path:str = self.__view_url__  
+                    if type!='static' or kws: #url route
+                        if kws:
+                            pairs = []
+                            if 'app' in kws:
+                                pairs.append(kws['app'].strip())
+                            if 'controller' in kws:
+                                pairs.append(kws['controller'].strip())
+                            if 'version' in kws:
+                                pairs.append(kws['version'].strip())
+                            if 'action' in kws:
+                                pairs.append(kws['action'].strip())
+                            elif url:
+                                pairs.append(url)
+                            path = "/"+"/".join(pairs)
+                            return path
+                            pass
+                        else:
+                            pairs = path.split("/")
+                            path = "/" + "/".join(pairs[2:])    
+                            return path + "/" + url.strip()
+                    else:
+                        return path + "/" + url.strip()
                 template_path = os.path.join(self.__appdir__,"views")
                 viewobj = _View(self.request,self.response,self.__version__,tmpl_path=template_path) 
                 viewobj._templates.env.globals["url_for"] = url_for 
