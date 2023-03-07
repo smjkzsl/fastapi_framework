@@ -52,15 +52,20 @@ def api_router(path:str="", version:str=""):
     def _wapper(targetController):  
         # 定义一个傀儡类，继承自目标类  
         class puppetController( targetController ,_controllerBase ): 
-             
+            
             def __init__(self,**kwags) -> None:
                 print(f"__init__ on puppetController")
                 super().__init__()
              
             @property
             def view(self): 
+                def url_for(url:str):
+                    path = self.__view_url__  
+                    return path + "/" + url.strip()
                 template_path = os.path.join(self.__appdir__,"views")
-                return _View(self.request,self.response,self.__version__,tmpl_path=template_path)
+                viewobj = _View(self.request,self.response,self.__version__,tmpl_path=template_path) 
+                viewobj._templates.env.globals["url_for"] = url_for 
+                return viewobj
             
             async def getUploadFile(self,file:File):  
                 if config.get("upload"):
@@ -81,10 +86,9 @@ def api_router(path:str="", version:str=""):
                     f.write(data)
                     f.close()
                 return save_file
-            async def _constructor(self,request = Request,response=Response):
-                # self.request = request
-                # self.response = response
+            async def _constructor(self,request = Request,response=Response):  
                 self.session = await  _sessionManager.initSession(request,response )
+
             async def _deconstructor(self,new_response:Response):
                 await _sessionManager.process(session =  self.session,response = new_response,request=self.request)
                 pass
@@ -93,6 +97,12 @@ def api_router(path:str="", version:str=""):
         setattr(puppetController,"__version__",version)  
         setattr(puppetController,"__location__",relative_path)  
         setattr(puppetController,"__appdir__",app_dir)  
+
+        url_path = "/" + os.path.basename(app_dir) + '/' + targetController.__name__.lower().replace("controller","") 
+        if version:
+             url_path += '/' + version 
+        setattr(puppetController,"__view_url__",url_path) 
+
         if not app_dir in __app_views_dirs:
             __app_views_dirs[app_dir] = os.path.join(app_dir,"views")
             __app.mount("/"+os.path.basename(app_dir), 

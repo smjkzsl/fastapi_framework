@@ -19,7 +19,7 @@ class _View(object):
     @property
     def views_directory(self):
         return self._views_directory
-
+    
     @views_directory.setter
     def views_directory(self, views_directory: str):
         self._views_directory = views_directory
