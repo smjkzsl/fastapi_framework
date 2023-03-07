@@ -124,7 +124,9 @@ def run(*args,**kwargs):
     ip =  "host" in kwargs  and kwargs["host"]  or '127.0.0.1' 
     port = "port" in kwargs  and kwargs["port"] or 8000  
     isDebug = "debug" in kwargs and kwargs["debug"]  
-     
+    global __is_debug
+    __is_debug = isDebug 
+    
     if not len(__all_controller__)>0:
         raise "must use @api_route to define a controller class"
     all_routers = []
@@ -135,7 +137,6 @@ def run(*args,**kwargs):
         for router in all_routers:
             for r in router.routes:
                 funcname = str(r.endpoint).split('<function ')[1].split(" at ")[0]
-                print(f"***** http:{ip}:{port}{r.path} ***({funcname})***" )
-    global __is_debug
-    __is_debug = isDebug
+                print(f"*****   \033[1;43m  http:{ip}:{port}{r.path} \033[0m ->({funcname})" )
+    
     uvicorn.run(__app, host=ip, port=port,debug=isDebug)
