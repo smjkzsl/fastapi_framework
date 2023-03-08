@@ -1,2 +1,4 @@
 upload:
   dir: "./uploads"
+
+public_dir: "./public"

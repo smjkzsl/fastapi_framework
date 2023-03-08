@@ -150,7 +150,10 @@ def api_router(path:str="", version:str=""):
 
 
 
-
+public_dir =  os.path.abspath(config.get("public_dir" ) )
+if not os.path.exists(public_dir):
+    os.mkdir(public_dir)
+__app.mount('/public',  StaticFiles(directory=public_dir), name='public')
 
 @__app.middleware("http")
 async def preprocess_request(request: Request, call_next):
