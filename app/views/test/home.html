@@ -8,7 +8,9 @@
         <p class="text rotate">FastApi Framework</p>
     </div>
     <div>
-        {{request.url.path}}
+        <p>
+            <a href="{{url_for(url='',type='link',controller=" abc ",action='abcd',version="2.0 ")}}">`abcd` action in test</a> </p>
+        <a href="{{url_for(url='',type='link',app=" app1 ", controller=" test1 ",action='home',version="v1.0 ")}}">`home` action in app1.test</a> </p>
     </div>
     <style>
         .circle {

@@ -22,7 +22,7 @@ class TestController():
 
 
     
-@api_router(version="2.0",path="/{version}/{controller}")
+@api_router(version="2.0",path="/{controller}/{version}")
 class ABCController():
     def __init__(self):
         print(f"__init__ on ABCController")
