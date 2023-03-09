@@ -1,7 +1,7 @@
 __pycache__
 .python-version 
-.vscode
-dist
-.sessions
-.build
-*egg-info
+.vscode/
+dist/
+sessions/
+build/
+*.egg-info
