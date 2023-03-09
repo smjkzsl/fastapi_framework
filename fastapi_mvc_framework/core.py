@@ -15,17 +15,30 @@ from fastapi_mvc_framework.fastapi_view import _View
 from hashlib import md5
 from fastapi_mvc_framework.config import YamlConfig
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
+import logging
 
 ROOT_PATH = os.path.realpath(os.curdir)
 
 
 __app = FastAPI() 
-__app_views_dirs = {}
-
+__app_views_dirs = {} 
 __all_controller__ = []
+
 config = YamlConfig(os.path.join(ROOT_PATH,"configs") )
 __session_config = config.get('session')
 
+__levels_or_log = {
+ 'CRITICAL' : 50, 
+ 'ERROR' : 40,
+ 'WARNING' : 30,
+ 'INFO' : 20,
+ 'DEBUG' : 10,
+ 'NOTSET' : 0,
+}
+__log_level = config.get('log')['level'] or 'DEBUG'
+logging.basicConfig(level=__levels_or_log[__log_level])
+_log = logging.getLogger(config.get("log")['name'] or "FastApi Framework")
 _sessionManager = SessionManager(storage=_SESSION_STORAGES[__session_config['type']](__session_config['dir'],__session_config['secretkey']))
  
 
@@ -59,9 +72,13 @@ def api_router(path:str="", version:str=""):
         class puppetController( targetController ,_controllerBase ): 
             
             def __init__(self,**kwags) -> None:
-                print(f"__init__ on puppetController")
+                self.log.debug(f"__init__ on puppetController")
                 super().__init__()
-             
+            def redirect(self,url):
+                return RedirectResponse(url)
+            @property
+            def log(self):
+                return _log
             @property
             def view(self): 
                 def url_for(url:str="",type:str="static",**kws):
@@ -148,27 +165,71 @@ def api_router(path:str="", version:str=""):
         return puppetController 
     return _wapper #: @puppetController 
 
+from fastapi import FastAPI, HTTPException,exceptions
+ 
+from fastapi.responses import HTMLResponse
+from fastapi.exception_handlers import (
+    http_exception_handler,
+    request_validation_exception_handler,
+)
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+import traceback
+__is_debug=False
+@__app.exception_handler(StarletteHTTPException)
+async def custom_http_exception_handler(request, e:StarletteHTTPException):
+    content = "<h1>404 Not Found(URL Exception)</h1>"
+    content += '<h3>please check url</h3>'
+    if __is_debug:
+        content += '<p>' + str(e.detail) + '</p>'
+    return HTMLResponse(content=content, status_code=404)
+    print(f"OMG! An HTTP error!: {repr(exc)}")
+    return await http_exception_handler(request, exc)#by default handler
 
+@__app.exception_handler(Exception)
+async def validation_exception_handler(request, e:Exception):
+    content = "<h1>500 Internal Server Error</h1>"
+    if __is_debug: 
+        exc_traceback = e.__traceback__ 
+        # show traceback the last files and location
+        tb_summary = traceback.extract_tb(exc_traceback)[-3:]
+        content += '<p>'
+        for filename, line, func, text in tb_summary: 
+            content += (f"{filename}:{line} in {func}</br>") 
+        content += '</p>'
+        content += '<p>Error description:' + str(e.args)  + '</p>'
+    return HTMLResponse(content=content, status_code=500)
+
+
+@__app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    print(f"OMG! The client sent invalid data!: {exc}")
+    return await request_validation_exception_handler(request, exc)
+
+# @__app.exception_handler(Exception)
+# async def server_error_handler(request: Request, exc: Exception):
+#     content = "<h1>500 Internal Server Error</h1>"
+#     if __is_debug:
+#         content += '<p>' + str(exec) + '</p>'
+#     return HTMLResponse(content=content, status_code=500)
+
+# @__app.exception_handler(HTTPException)
+# async def http_exception_handler(request, exc):
+#     content = "<h1>404 Not Found(URL Exception)</h1>"
+#     if __is_debug:
+#         content += '<p>' + str(exec) + '</p>'
+#     return HTMLResponse(content=content, status_code=404)
 
 public_dir =  os.path.abspath(config.get("public_dir" ) )
 if not os.path.exists(public_dir):
     os.mkdir(public_dir)
+
 __app.mount('/public',  StaticFiles(directory=public_dir), name='public')
+
 
 @__app.middleware("http")
 async def preprocess_request(request: Request, call_next):
     print(f"dispatch on preprocess_request")
-    # def is_static_file(filename: str) -> bool:
-    #     if filename.find(".")<0:return False
-    #     static_extensions = ['.css', '.js', '.png', '.jpg']
-    #     file_extension = os.path.splitext(filename)[1].lower()
-    #     return file_extension in static_extensions
-    # if is_static_file(request.url.path): 
-    #     curpath = os.path.realpath(os.curdir+"/app/views")
-    #     abspath = os.path.realpath(curpath+request.url.path )
-    #     response = FileResponse(path=abspath,filename=os.path.basename(abspath))
-    #     return response 
-   
     if __is_debug:
         start_time = time.time() 
     #pre call to controller method
@@ -179,7 +240,7 @@ async def preprocess_request(request: Request, call_next):
         response.headers["X-Process-Time"] = str(process_time)  
     return response 
 
-__is_debug=False
+
 def run(*args,**kwargs): 
     ip =  "host" in kwargs  and kwargs["host"]  or '127.0.0.1' 
     port = "port" in kwargs  and kwargs["port"] or 8000  

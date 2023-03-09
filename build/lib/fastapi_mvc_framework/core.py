@@ -30,6 +30,9 @@ _sessionManager = SessionManager(storage=_SESSION_STORAGES[__session_config['typ
  
 
 def api_router(path:str="", version:str=""):  
+    '''
+    path :special path format ,
+    '''
     caller_frame = inspect.currentframe().f_back
     caller_file = caller_frame.f_code.co_filename
     relative_path = caller_file.replace(ROOT_PATH,"")
@@ -39,13 +42,15 @@ def api_router(path:str="", version:str=""):
         app_dir = "app"
     app_dir = os.path.join(ROOT_PATH,app_dir)
 
-    if  version:
-        if path:
-            _controllerBase = create_controller(path,version )
-        else:
-            _controllerBase = create_controller("/{controller}/v{version}",version )  
-    else:
-        _controllerBase = create_controller()  
+    def format_path(p,v):
+        if p and  '{controller}' not in p :
+            p += '/{controller}' 
+            p += '/{version}' if v else ''
+        if v and not path:
+            p = "/{controller}/{version}"
+        return p
+    path = format_path(path,version) 
+    _controllerBase = create_controller(path,version)  
         
     __all_controller__.append(_controllerBase)
     
@@ -59,9 +64,36 @@ def api_router(path:str="", version:str=""):
              
             @property
             def view(self): 
-                def url_for(url:str):
-                    path = self.__view_url__  
-                    return path + "/" + url.strip()
+                def url_for(url:str="",type:str="static",**kws):
+                    url_path :str = self.__view_url__ 
+                    url = url.strip()
+                    if type!='static' or kws: #url route
+                        if kws:
+                            url_path = ""
+                            pairs = []
+                            if 'app' in kws and kws['app'].strip():
+                                pairs.append(kws['app'].strip())
+                            if 'controller' in kws  and kws['controller'].strip():
+                                pairs.append(kws['controller'].strip())
+                            if 'version' in kws  and kws['version'].strip():
+                                pairs.append(kws['version'].strip())
+                            if 'action' in kws  and kws['action'].strip():
+                                pairs.append(kws['action'].strip())
+                            elif url :
+                                pairs.append(url)
+                            url_path = "/"+"/".join(pairs)
+                            return url_path
+                            pass
+                        else:
+                             
+                            url_path = self.__template_path__.replace('{controller}',self.__controller_name__).replace("{version}",self.__version__)
+                            return url_path + "/" + url.strip()
+                    else:
+                        url_path += '/' + self.__controller_name__
+                        if self.__version__:
+                            url_path += '/' + self.__version__
+                        return url_path + "/"  + url.strip()
+                    
                 template_path = os.path.join(self.__appdir__,"views")
                 viewobj = _View(self.request,self.response,self.__version__,tmpl_path=template_path) 
                 viewobj._templates.env.globals["url_for"] = url_for 
@@ -94,26 +126,34 @@ def api_router(path:str="", version:str=""):
                 pass
                  
         setattr(puppetController,"__name__",targetController.__name__)  
+        setattr(puppetController,"__controller_name__",targetController.__name__.lower().replace("controller",""))  
+        
         setattr(puppetController,"__version__",version)  
         setattr(puppetController,"__location__",relative_path)  
         setattr(puppetController,"__appdir__",app_dir)  
 
-        url_path = "/" + os.path.basename(app_dir) + '/' + targetController.__name__.lower().replace("controller","") 
-        if version:
-             url_path += '/' + version 
-        setattr(puppetController,"__view_url__",url_path) 
+        setattr(puppetController,"__controler_url__",targetController.__name__.lower().replace("controller",""))  
+        #for generate url_for function
+        _view_url_path:str = "/" + os.path.basename(app_dir) + '_views'  
+         
+        setattr(puppetController,"__view_url__",_view_url_path) 
 
+        #add app dir sub views to StaticFiles
         if not app_dir in __app_views_dirs:
             __app_views_dirs[app_dir] = os.path.join(app_dir,"views")
-            __app.mount("/"+os.path.basename(app_dir), 
-                        StaticFiles(directory=__app_views_dirs[app_dir]), name=os.path.basename(app_dir))
+            #path match static files
+            _static_path = _view_url_path              
+            __app.mount(_static_path,  StaticFiles(directory=__app_views_dirs[app_dir]), name=os.path.basename(app_dir))
  
         return puppetController 
     return _wapper #: @puppetController 
 
 
 
-
+public_dir =  os.path.abspath(config.get("public_dir" ) )
+if not os.path.exists(public_dir):
+    os.mkdir(public_dir)
+__app.mount('/public',  StaticFiles(directory=public_dir), name='public')
 
 @__app.middleware("http")
 async def preprocess_request(request: Request, call_next):

@@ -2,3 +2,7 @@ upload:
   dir: "./uploads"
 
 public_dir: "./public"
+
+log:
+  name: 'Test'
+  level: 'DEBUG'

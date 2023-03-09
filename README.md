@@ -1,5 +1,6 @@
 # fastapi_framework
-a mvc framework used fastapi
+A mvc framework used FastApi
+Simple and elegant use of FastApi in MVC mode
 
 usage:
 

@@ -7,16 +7,17 @@ class TestController():
     request:Request=None
     response:Response=None
     def __init__(self):
-        print(f"__init__ on TestController")
+        self.log.info(f"__init__ on TestController")
 
     @api.get("/" )
     def home(self): 
-        c = self.session['a'] or 1
+        c = self.session['home'] or 1
         c = c+1 
-        #从 cookies 字典中写出cookies 
-        self.response.set_cookie('a',c) 
-        self.session['a'] = c
-        text = "你好，世界！"
+        # #setting cookies   
+        # self.response.set_cookie('a',c) 
+        self.session['home'] = c
+        text = "Hello World! I'm in FastapiMvcFramework"
+        
         return self.view()
     
 
@@ -25,11 +26,13 @@ class TestController():
 @api_router(version="2.0",path="/{controller}/{version}")
 class ABCController():
     def __init__(self):
-        print(f"__init__ on ABCController")
+        self.log.debug(f"__init__ on ABCController")
 
     @api.get("/abcd" )
     def home(self):
-        v = "这是个神奇的世界"
-        
+        v = "This is a <b><red>magical world<red></b>"
+        c = self.session['home'] or 0
+        if not c>0:
+            return self.redirect("/")
         
         return self.view()

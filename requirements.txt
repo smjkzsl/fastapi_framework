@@ -1,0 +1,11 @@
+cryptography==3.4.8
+fastapi==0.93.0
+fastapi_utils==0.2.1
+pydantic==1.10.2
+PyYAML==6.0
+redis==4.5.1
+setuptools==56.0.0
+starlette==0.20.4
+typing_inspect==0.8.0
+ujson==5.5.0
+uvicorn==0.20.0

@@ -1,13 +1,14 @@
 Metadata-Version: 2.1
 Name: fastapi-mvc-framework
-Version: 0.4
-Summary: MVC framework implemented by fastapi
+Version: 0.5
+Summary: Simple and elegant use of FastApi in MVC mode
 Home-page: https://github.com/smjkzsl/fastapi_framework
 Author: Bruce chou
 Author-email: smjkzsl@gmail.com
 License: UNKNOWN
 Description: # fastapi_framework
-        a mvc framework used fastapi
+        A mvc framework used FastApi
+        Simple and elegant use of FastApi in MVC mode
         
         usage:
         

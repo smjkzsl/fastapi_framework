@@ -5,10 +5,10 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='fastapi_mvc_framework',
-    version='0.4',
+    version='0.5',
     author='Bruce chou',
     author_email='smjkzsl@gmail.com',
-    description='MVC framework implemented by fastapi',
+    description='Simple and elegant use of FastApi in MVC mode',
     long_description=long_description,
     long_description_content_type="text/markdown",
 
