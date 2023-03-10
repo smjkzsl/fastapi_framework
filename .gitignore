@@ -5,3 +5,4 @@ dist/
 sessions/
 build/
 *.egg-info
+build_code.md

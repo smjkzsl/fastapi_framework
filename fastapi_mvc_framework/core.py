@@ -206,27 +206,16 @@ async def validation_exception_handler(request, exc):
     print(f"OMG! The client sent invalid data!: {exc}")
     return await request_validation_exception_handler(request, exc)
 
-# @__app.exception_handler(Exception)
-# async def server_error_handler(request: Request, exc: Exception):
-#     content = "<h1>500 Internal Server Error</h1>"
-#     if __is_debug:
-#         content += '<p>' + str(exec) + '</p>'
-#     return HTMLResponse(content=content, status_code=500)
-
-# @__app.exception_handler(HTTPException)
-# async def http_exception_handler(request, exc):
-#     content = "<h1>404 Not Found(URL Exception)</h1>"
-#     if __is_debug:
-#         content += '<p>' + str(exec) + '</p>'
-#     return HTMLResponse(content=content, status_code=404)
-
+ 
 public_dir =  os.path.abspath(config.get("public_dir" ) )
 if not os.path.exists(public_dir):
     os.mkdir(public_dir)
 
 __app.mount('/public',  StaticFiles(directory=public_dir), name='public')
 
-
+# @__app.get("/favicon.ico")
+# def _get_favicon():
+#     return FileResponse("./public/favicon.ico")
 @__app.middleware("http")
 async def preprocess_request(request: Request, call_next):
     print(f"dispatch on preprocess_request")
